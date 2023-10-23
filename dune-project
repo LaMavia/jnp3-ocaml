@@ -19,8 +19,13 @@
  (name jnp3_ocaml)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune)
  (tags
-  (topics "to describe" your project)))
+  (topics "to describe" your project))
+ (depends 
+  (dune (>= 3.10))
+  (ocaml (= 4.13.1))
+  (ocaml-lsp-server (= 1.9.1))
+  ocamlformat
+ ))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# reset the cwd
+cd "$(dirname "$0")" || exit 1
+
+# check the dependencies
+if [ ! -x "$(which opam)" ]; then
+  printf "Missing dependency: opam\nExitting." 1>&2
+  exit 1
+fi
+
+# remove the _opam directory if exists
+if [ -d _opam ]; then
+  printf "Removing the old _opam directory...\n"
+  yes | rm -r _opam
+fi
+
+# create the switch 
+printf "Creating a new switch...\n"
+if opam switch create . 4.13.1 --yes; then
+  printf "Run: %s" 'eval $(opam env)'
+else
+  printf "'opam switch create . --yes' failed.\nExitting.\n" 1>&2 
+  exit 1
+fi
+
