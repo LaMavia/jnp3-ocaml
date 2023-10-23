@@ -1,0 +1,2 @@
+(library
+ (name jnp3_ocaml))
