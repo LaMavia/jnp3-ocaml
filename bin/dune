@@ -1,4 +1,4 @@
 (executables
  (names client server)
  (public_names client server)
- (libraries jnp3_ocaml ))
+ (libraries lib unix threads))

@@ -1,3 +1,5 @@
+module BootOp = Op
+
 type t = {
   op    : Op.t          ;
   htype : int           ;
@@ -16,6 +18,7 @@ type t = {
 }
 
 let min_message_length = 236
+let max_message_length = min_message_length + 64
 
 let message_of_bytes bytes = {
   op = Bytes.sub bytes 0 1 
