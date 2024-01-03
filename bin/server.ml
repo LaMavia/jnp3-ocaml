@@ -10,13 +10,12 @@ module Loop = struct
       let open Lib.Server in 
 
       let ( let* ) = Result.bind in
-      (message, client_addr) |> ignore;
 
       (* fill the yiaddr *)
       let* message = 
         if message.ciaddr = inet_addr_any then 
           let* client_info = message.chaddr
-            |> Bytes.to_string  
+            |> Mac.readable_of_bytes message.hlen  
             |> Hashtbl.find_opt server_descriptor.db.clients
             |> Option.to_result ~none:"client not found"
           in Result.ok { message with yiaddr = inet_addr_of_string client_info.ip_addr } 
@@ -25,10 +24,9 @@ module Loop = struct
       (* fill the file path *)
       let* message =
         let fname = 
-          if String.for_all ((=) '\000') message.file then 
+          if Lib.Utils.Str.is_empty message.file then 
             Database.default_boot_file_name 
           else message.file in
-        Printf.eprintf "fname: '%s'\n" fname;
         let* boot_file_path = fname
           |> Hashtbl.find_opt server_descriptor.db.boot_files
           |> Option.to_result ~none:"boot file not found" in
@@ -37,17 +35,24 @@ module Loop = struct
             server_descriptor.db.homedir 
             boot_file_path 
         in Result.ok { message with file = full_file_path } in 
-      
-      (* mark the message as done *)
+     
+      (* fill the server address *)
       let* server_inet_addr = 
         match getsockname socket_fd with
         | ADDR_INET (inet_addr, _) -> Result.ok inet_addr
         | _ -> Result.error "invalid socket type"
         in
-      let message = { message with siaddr = server_inet_addr; op = BootOp.BOOTREPLY } in
+      let message = 
+        if Lib.Utils.Inet.is_null message.siaddr then 
+          { message with siaddr = server_inet_addr }
+        else message
+      in
+        
+      (* mark the message as done *)
+      let message = { message with op = BootOp.BOOTREPLY } in
 
       (* send the response *)
-      let* bytes = Result.ok (bytes_of_message message) in
+      let bytes = bytes_of_message message in
       let len_sent = sendto socket_fd bytes 0 (Bytes.length bytes) [] client_addr in
         Printf.eprintf "[req] sent back %d bytes\n" len_sent;
         Result.ok ()
