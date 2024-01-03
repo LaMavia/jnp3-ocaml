@@ -1,4 +1,5 @@
 module BootOp = Op
+module GenericInt = GenericInt
 
 type t = {
   op    : Op.t          ;
@@ -16,6 +17,38 @@ type t = {
   file  : string        ;
   vend  : bytes         ;
 }
+
+let to_string msg =
+  Printf.sprintf 
+"{ op    = %s 
+  htype  = %d
+  hlen   = %d
+  hops   = %d
+  xid    = %s
+  secs   = %d
+  ciaddr = %s
+  yiaddr = %s
+  siaddr = %s
+  giaddr = %s
+  chaddr = %s
+  sname  = %s
+  file   = %s
+  vend   = %s
+}"
+    (Op.to_string msg.op)
+    msg.htype
+    msg.hlen
+    msg.hops
+    (Int32.to_string msg.xid)
+    msg.secs
+    (Unix.string_of_inet_addr msg.ciaddr)
+    (Unix.string_of_inet_addr msg.yiaddr)
+    (Unix.string_of_inet_addr msg.siaddr)
+    (Unix.string_of_inet_addr msg.giaddr)
+    (Bytes.to_string msg.chaddr)
+    msg.sname
+    msg.file
+    (Bytes.to_string msg.vend)
 
 let min_message_length = 236
 let max_message_length = min_message_length + 64
@@ -62,18 +95,19 @@ let message_of_bytes bytes = {
 
 let bytes_of_message message = 
   let open Bytes in
-  let output_buffer = create (236 + length message.vend) in
-  blit (message.op |> Op.bytes_of_boot_op)            0 output_buffer 0   1;
-  blit GenericInt.(`int8 message.htype |> bytes_of_t) 0 output_buffer 1   1;
-  blit GenericInt.(`int8 message.hlen  |> bytes_of_t) 0 output_buffer 2   1;  
-  blit GenericInt.(`int8 message.hops  |> bytes_of_t) 0 output_buffer 3   1;  
-  blit GenericInt.(`int32 message.xid  |> bytes_of_t) 0 output_buffer 4   4;  
-  blit GenericInt.(`int16 message.secs |> bytes_of_t) 0 output_buffer 8   2;  
-  blit (Address.bytes_of_addr message.ciaddr)         0 output_buffer 12  4;  
-  blit (Address.bytes_of_addr message.yiaddr)         0 output_buffer 16  4; 
-  blit (Address.bytes_of_addr message.siaddr)         0 output_buffer 20  4; 
-  blit (Address.bytes_of_addr message.giaddr)         0 output_buffer 24  4;
-  blit message.chaddr                                 0 output_buffer 28  16;
+  let output_buffer = make (236 + length message.vend) '\000' in
+  let dbg () = Printf.eprintf "dbg: %s\n" (Bytes.to_string output_buffer) in
+  blit (message.op |> Op.bytes_of_boot_op)            0 output_buffer 0   1; dbg ();
+  blit GenericInt.(`int8 message.htype |> bytes_of_t) 0 output_buffer 1   1; dbg ();
+  blit GenericInt.(`int8 message.hlen  |> bytes_of_t) 0 output_buffer 2   1; dbg ();
+  blit GenericInt.(`int8 message.hops  |> bytes_of_t) 0 output_buffer 3   1; dbg (); 
+  blit GenericInt.(`int32 message.xid  |> bytes_of_t) 0 output_buffer 4   4; dbg (); 
+  blit GenericInt.(`int16 message.secs |> bytes_of_t) 0 output_buffer 8   2; dbg ();
+  blit (Address.bytes_of_addr message.ciaddr)         0 output_buffer 12  4; dbg ();
+  blit (Address.bytes_of_addr message.yiaddr)         0 output_buffer 16  4; dbg ();
+  blit (Address.bytes_of_addr message.siaddr)         0 output_buffer 20  4; dbg ();
+  blit (Address.bytes_of_addr message.giaddr)         0 output_buffer 24  4; dbg ();
+  blit message.chaddr                                 0 output_buffer 28  16; dbg ();
   blit (message.sname |> of_string)                   0 output_buffer 44  (min (String.length message.sname) 64 );
   blit (message.file  |> of_string)                   0 output_buffer 108 (min (String.length message.file ) 128);
   blit message.vend                                   0 output_buffer 236 (min (length message.vend) 64 );

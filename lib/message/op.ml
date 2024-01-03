@@ -4,7 +4,7 @@ type t =
 
 let bytes_of_boot_op op =
   match op with
-  | BOOTREQUEST -> Bytes.make 1 (Char.chr 1) 
+  | BOOTREQUEST -> Bytes.make 1 (Char.chr 1)
   | BOOTREPLY   -> Bytes.make 1 (Char.chr 2)
 
 let boot_op_of_bytes bytes =
@@ -14,4 +14,7 @@ let boot_op_of_bytes bytes =
           | 1 -> Some BOOTREQUEST
           | 2 -> Some BOOTREPLY
           | _ -> None
-        
+
+let to_string = function
+  | BOOTREQUEST -> "BOOTREQUEST"
+  | BOOTREPLY -> "BOOTREPLY"
