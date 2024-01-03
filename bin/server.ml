@@ -1,5 +1,3 @@
-(* let accept_connection_main ~socket_fd () = undefined *)
-
 module Loop = struct
   open Unix
 
@@ -7,7 +5,7 @@ module Loop = struct
     let reply (socket_fd, client_addr, message) = 
       (socket_fd, message, client_addr) |> ignore 
 
-    let request (server_descriptor, socket_fd, client_addr, message): (unit, unit) result =       
+    let request (server_descriptor, socket_fd, client_addr, message): (unit, string) result =       
       let open Lib.Message in
       let open Lib.Server in 
 
@@ -20,19 +18,20 @@ module Loop = struct
           let* client_info = message.chaddr
             |> Bytes.to_string  
             |> Hashtbl.find_opt server_descriptor.db.clients
-            |> Option.to_result ~none:() 
+            |> Option.to_result ~none:"client not found"
           in Result.ok { message with yiaddr = inet_addr_of_string client_info.ip_addr } 
         else Result.ok message in
 
       (* fill the file path *)
       let* message =
         let fname = 
-          if message.file = "" then 
+          if String.for_all ((=) '\000') message.file then 
             Database.default_boot_file_name 
           else message.file in
+        Printf.eprintf "fname: '%s'\n" fname;
         let* boot_file_path = fname
           |> Hashtbl.find_opt server_descriptor.db.boot_files
-          |> Option.to_result ~none:() in
+          |> Option.to_result ~none:"boot file not found" in
         let full_file_path = 
           Filename.concat 
             server_descriptor.db.homedir 
@@ -43,12 +42,14 @@ module Loop = struct
       let* server_inet_addr = 
         match getsockname socket_fd with
         | ADDR_INET (inet_addr, _) -> Result.ok inet_addr
-        | _ -> Result.error ()
+        | _ -> Result.error "invalid socket type"
         in
       let message = { message with siaddr = server_inet_addr; op = BootOp.BOOTREPLY } in
+
       (* send the response *)
       let* bytes = Result.ok (bytes_of_message message) in
-        assert (sendto socket_fd bytes 0 (Bytes.length bytes) [] client_addr != 1);
+      let len_sent = sendto socket_fd bytes 0 (Bytes.length bytes) [] client_addr in
+        Printf.eprintf "[req] sent back %d bytes\n" len_sent;
         Result.ok ()
   end
 
@@ -68,9 +69,10 @@ module Loop = struct
     (* Reject messages that prefer another server *)
     let filter_by_preferred_server ~server_descriptor ~message () =
       let open Lib.Server in
+      String.iter (fun c -> Printf.eprintf "%d " (Char.code c)) server_descriptor.name;
       if message.op = BootOp.BOOTREQUEST 
-        && message.sname != "" 
-        && server_descriptor.name != message.sname 
+        && String.equal message.sname ""
+        && not @@ String.equal server_descriptor.name message.sname 
         then InvalidMessage "Not the preferred server" |> raise
         else ()
 
@@ -105,15 +107,19 @@ module Loop = struct
     with 
     | Result.Error reason -> 
         Printf.eprintf 
-          "[Acceptor] Invalid message: '%s'; message: '%s'" 
+          "[Acceptor] Invalid message: '%s'; message: '%s'\n" 
           reason
           (Bytes.to_string raw_data)
     | Result.Ok message ->
         (match message.op with
         | BootOp.BOOTREQUEST -> 
           Thread.create 
-            ProtocolWorkers.request
-            (server_descriptor, socket_fd, client_addr, message)
+            (fun a -> 
+              match ProtocolWorkers.request a with
+              | Result.Ok () -> ()
+              | Result.Error reason -> failwith reason
+              )
+            (server_descriptor, socket_fd, client_addr, message) 
         | BootOp.BOOTREPLY -> 
           Thread.create 
             ProtocolWorkers.reply
@@ -124,12 +130,16 @@ module Loop = struct
     let accept_connections ~on_connection ~socket_fd () =
       let buffer = Bytes.make Lib.Message.max_message_length '\000' in
       let rec reception_loop () =
+        Printf.eprintf "[main] awaiting connections...\n"; 
+        flush Stdlib.stderr;
         let (length_received, client_addr) = 
           recvfrom 
             socket_fd 
             buffer 0 (Bytes.length buffer) 
             [] 
           in
+        Printf.eprintf "[main] received %d bytes.\n" length_received; 
+        flush Stdlib.stderr;
         let raw_data = Bytes.sub buffer 0 length_received in
         (* Handle the message *)
         on_connection ~socket_fd ~raw_data ~client_addr ();
@@ -162,14 +172,19 @@ end
 
 
 let _ = 
-  let port = 0 in
-  let db_path = "" in
+  let port = 8080 in
+  let db_path = "./database.bootp" in
   let server_descriptor = Lib.Server.{
-    name = "";
+    name = String.make 64 '\000';
     db = Initialisation.read_db ~db_path () |> Result.get_ok
   } in
+  ( port
+  , server_descriptor
+  , Initialisation.create_server
+  , Loop.ConnectionAcceptance.accept_connections
+  , Loop.on_connection ) |> ignore;
   let socket_fd = Initialisation.create_server ~port:port () in
-  Loop.ConnectionAcceptance.accept_connections 
-    ~on_connection:(Loop.on_connection ~server_descriptor)
-    ~socket_fd
-    () 
+    Loop.ConnectionAcceptance.accept_connections 
+      ~on_connection:(Loop.on_connection ~server_descriptor)
+      ~socket_fd
+      () 

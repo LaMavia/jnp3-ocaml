@@ -96,18 +96,17 @@ let message_of_bytes bytes = {
 let bytes_of_message message = 
   let open Bytes in
   let output_buffer = make (236 + length message.vend) '\000' in
-  let dbg () = Printf.eprintf "dbg: %s\n" (Bytes.to_string output_buffer) in
-  blit (message.op |> Op.bytes_of_boot_op)            0 output_buffer 0   1; dbg ();
-  blit GenericInt.(`int8 message.htype |> bytes_of_t) 0 output_buffer 1   1; dbg ();
-  blit GenericInt.(`int8 message.hlen  |> bytes_of_t) 0 output_buffer 2   1; dbg ();
-  blit GenericInt.(`int8 message.hops  |> bytes_of_t) 0 output_buffer 3   1; dbg (); 
-  blit GenericInt.(`int32 message.xid  |> bytes_of_t) 0 output_buffer 4   4; dbg (); 
-  blit GenericInt.(`int16 message.secs |> bytes_of_t) 0 output_buffer 8   2; dbg ();
-  blit (Address.bytes_of_addr message.ciaddr)         0 output_buffer 12  4; dbg ();
-  blit (Address.bytes_of_addr message.yiaddr)         0 output_buffer 16  4; dbg ();
-  blit (Address.bytes_of_addr message.siaddr)         0 output_buffer 20  4; dbg ();
-  blit (Address.bytes_of_addr message.giaddr)         0 output_buffer 24  4; dbg ();
-  blit message.chaddr                                 0 output_buffer 28  16; dbg ();
+  blit (message.op |> Op.bytes_of_boot_op)            0 output_buffer 0   1; 
+  blit GenericInt.(`int8 message.htype |> bytes_of_t) 0 output_buffer 1   1; 
+  blit GenericInt.(`int8 message.hlen  |> bytes_of_t) 0 output_buffer 2   1; 
+  blit GenericInt.(`int8 message.hops  |> bytes_of_t) 0 output_buffer 3   1;  
+  blit GenericInt.(`int32 message.xid  |> bytes_of_t) 0 output_buffer 4   4;  
+  blit GenericInt.(`int16 message.secs |> bytes_of_t) 0 output_buffer 8   2; 
+  blit (Address.bytes_of_addr message.ciaddr)         0 output_buffer 12  4; 
+  blit (Address.bytes_of_addr message.yiaddr)         0 output_buffer 16  4; 
+  blit (Address.bytes_of_addr message.siaddr)         0 output_buffer 20  4; 
+  blit (Address.bytes_of_addr message.giaddr)         0 output_buffer 24  4; 
+  blit message.chaddr                                 0 output_buffer 28  16; 
   blit (message.sname |> of_string)                   0 output_buffer 44  (min (String.length message.sname) 64 );
   blit (message.file  |> of_string)                   0 output_buffer 108 (min (String.length message.file ) 128);
   blit message.vend                                   0 output_buffer 236 (min (length message.vend) 64 );

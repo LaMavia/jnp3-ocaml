@@ -1,4 +1,5 @@
 (executables
  (names client server)
  (public_names client server)
- (libraries lib unix threads))
+ (libraries lib unix threads)
+ (modes byte exe ))
