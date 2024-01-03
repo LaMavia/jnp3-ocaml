@@ -1,4 +1,3 @@
-module Mac = Mac
 module Database = struct
   type t = Database.t
   type client_info = Database.client_info

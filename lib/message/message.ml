@@ -1,5 +1,6 @@
 module BootOp = Op
 module GenericInt = GenericInt
+module Mac = Mac
 
 type t = {
   op    : Op.t          ;
@@ -45,7 +46,7 @@ let to_string msg =
     (Unix.string_of_inet_addr msg.yiaddr)
     (Unix.string_of_inet_addr msg.siaddr)
     (Unix.string_of_inet_addr msg.giaddr)
-    (Bytes.to_string msg.chaddr)
+    (Mac.readable_of_bytes msg.hlen msg.chaddr)
     msg.sname
     msg.file
     (Bytes.to_string msg.vend)

@@ -14,3 +14,25 @@ let lookup_ip_by_mac ~mac_address =
        Some addr 
   with _ -> None
 
+let readable_of_bytes length_bytes bytes =
+  let addr_bytes = Bytes.sub bytes 0 length_bytes in
+    Seq.unfold
+      (fun i -> 
+        if i < length_bytes then
+          Option.some (Bytes.get_uint8 addr_bytes i, i+1)
+        else Option.none
+      ) 0
+    |> Seq.map (Printf.sprintf "%02x")
+    |> List.of_seq
+    |> String.concat "."
+
+let bytes_of_readable mac_address =
+  (* 02.60.8c.06.34.98 *)
+  let bytes = Bytes.make 16 '\000' in
+  let fragments = String.split_on_char '.' mac_address in
+  fragments
+  |> List.map (fun f -> Scanf.sscanf f "%x" Fun.id) 
+  |> List.iteri (Bytes.set_uint8 bytes);
+  bytes
+
+  
