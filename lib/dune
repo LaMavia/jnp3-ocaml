@@ -2,5 +2,4 @@
 
 (library
  (name lib)
- (libraries unix)
- )
+ (libraries unix))
