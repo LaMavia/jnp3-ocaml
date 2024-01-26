@@ -13,11 +13,13 @@ let _ =
     ; yiaddr = Unix.inet_addr_any
     ; siaddr = Unix.inet_addr_any
     ; giaddr = Unix.inet_addr_any
-    ; chaddr = Mac.bytes_of_readable "00:0c:29:4f:8e:5c"
+    ; chaddr = Mac.bytes_of_readable "02.60.8c.06.34.98"
     ; sname = String.make 64 '\000'
-    ; file = String.make 128 '\000'
+    ; file = "watch"
     ; vend = Bytes.make 64 '\000'
     }
   in
+  let eq = if "a\000" = "a" then "yes" else "no" in
+  Printf.eprintf "%s\n" eq;
   output_bytes file (bytes_of_message msg)
 ;;

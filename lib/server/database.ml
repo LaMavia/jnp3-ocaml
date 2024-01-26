@@ -1,9 +1,16 @@
+module StringHashtbl = Hashtbl.Make (struct
+    type t = string
+
+    let equal = String.equal
+    let hash = Hashtbl.hash
+  end)
+
 type t =
   { homedir : string
   ; (* generic_name -> path *)
-    boot_files : (string, string) Hashtbl.t
+    boot_files : string StringHashtbl.t
   ; (* hardware_addr -> client_infp *)
-    clients : (string, client_info) Hashtbl.t
+    clients : client_info StringHashtbl.t
   }
 
 and client_info =
@@ -34,7 +41,7 @@ let string_of_client_info info =
 ;;
 
 let string_of_hash tbl string_of_key string_of_val =
-  Hashtbl.to_seq tbl
+  StringHashtbl.to_seq tbl
   |> Seq.fold_left
        (fun u (k, v) -> u ^ string_of_key k ^ " = " ^ string_of_val v ^ "\n")
        ""
@@ -102,12 +109,16 @@ let parse_database_file lines =
       let boot_file_entries, client_entries =
         List.partition_map db_entry_of_line other_lines
       in
-      let boot_file_table = boot_file_entries |> List.to_seq |> Hashtbl.of_seq in
-      let client_table = client_entries |> List.to_seq |> Hashtbl.of_seq in
+      let boot_file_table = boot_file_entries |> List.to_seq |> StringHashtbl.of_seq in
+      let client_table = client_entries |> List.to_seq |> StringHashtbl.of_seq in
       Result.ok { homedir; boot_files = boot_file_table; clients = client_table }
   with
   | _ ->
-    Result.ok { homedir = ""; boot_files = Hashtbl.create 0; clients = Hashtbl.create 0 }
+    Result.ok
+      { homedir = ""
+      ; boot_files = StringHashtbl.create 0
+      ; clients = StringHashtbl.create 0
+      }
 ;;
 
 let db_of_path db_file_path =

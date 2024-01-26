@@ -24,13 +24,13 @@ let readable_of_bytes length_bytes bytes =
     0
   |> Seq.map (Printf.sprintf "%02x")
   |> List.of_seq
-  |> String.concat ":"
+  |> String.concat "."
 ;;
 
 let bytes_of_readable mac_address =
   (* 02.60.8c.06.34.98 *)
   let bytes = Bytes.make 16 '\000' in
-  let fragments = String.split_on_char ':' mac_address in
+  let fragments = String.split_on_char '.' mac_address in
   fragments
   |> List.map (fun f -> Scanf.sscanf f "%x" Fun.id)
   |> List.iteri (Bytes.set_uint8 bytes);

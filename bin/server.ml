@@ -19,7 +19,7 @@ module Loop = struct
           let* client_info =
             message.chaddr
             |> Mac.readable_of_bytes message.hlen
-            |> Hashtbl.find_opt server_descriptor.db.clients
+            |> Database.find_opt server_descriptor.db.clients
             |> Option.to_result ~none:"client not found"
           in
           Result.ok { message with yiaddr = inet_addr_of_string client_info.ip_addr }
@@ -34,7 +34,7 @@ module Loop = struct
         in
         let* boot_file_path =
           fname
-          |> Hashtbl.find_opt server_descriptor.db.boot_files
+          |> Database.find_opt server_descriptor.db.boot_files
           |> Option.to_result ~none:"boot file not found"
         in
         let full_file_path =
@@ -162,7 +162,12 @@ end
 module Initialisation = struct
   open Unix
 
-  let initialise_socket () = socket ~cloexec:true PF_INET SOCK_DGRAM 0
+  let initialise_socket () =
+    let socket_fd = socket ~cloexec:true PF_INET SOCK_DGRAM 0 in
+    setsockopt socket_fd SO_BROADCAST true;
+    socket_fd
+  ;;
+
   let initialise_address ~port () = ADDR_INET (inet_addr_any, port)
 
   let create_server ~port () =
@@ -256,6 +261,7 @@ let _ =
     , Loop.ConnectionAcceptance.accept_connections
     , Loop.on_connection )
     |> ignore;
+    Printf.eprintf "port: %d\n" port;
     let socket_fd = Initialisation.create_server ~port () in
     Loop.ConnectionAcceptance.accept_connections
       ~on_connection:(Loop.on_connection ~server_descriptor)

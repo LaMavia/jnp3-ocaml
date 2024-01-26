@@ -2,6 +2,7 @@ module Database = struct
   type t = Database.t
   type client_info = Database.client_info
 
+  let find_opt = Database.StringHashtbl.find_opt
   let db_of_path = Database.db_of_path
   let default_boot_file_name = "default"
   let to_string = Database.to_string

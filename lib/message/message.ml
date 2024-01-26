@@ -19,6 +19,12 @@ type t =
   ; vend : bytes
   }
 
+let trim_null s =
+  match String.index_opt s '\000' with
+  | None -> s
+  | Some i -> String.sub s 0 i
+;;
+
 let to_string msg =
   Printf.sprintf
     "{ op    = %s \n\
@@ -67,8 +73,8 @@ let message_of_bytes bytes =
   ; siaddr = Bytes.sub bytes 20 4 |> Address.addr_of_bytes
   ; giaddr = Bytes.sub bytes 24 4 |> Address.addr_of_bytes
   ; chaddr = Bytes.sub bytes 28 16
-  ; sname = Bytes.sub bytes 44 64 |> Bytes.to_string
-  ; file = Bytes.sub bytes 108 128 |> Bytes.to_string
+  ; sname = Bytes.sub bytes 44 64 |> Bytes.to_string |> trim_null
+  ; file = Bytes.sub bytes 108 128 |> Bytes.to_string |> trim_null
   ; vend =
       (let length = Bytes.length bytes in
        if length > min_message_length
