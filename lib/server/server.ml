@@ -11,4 +11,5 @@ end
 type server_descriptor =
   { name : string
   ; db : Database.t
+  ; port : int
   }

@@ -2,8 +2,16 @@ module Loop = struct
   open Unix
 
   module ProtocolWorkers = struct
-    let reply (socket_fd, client_addr, message) =
-      (socket_fd, message, client_addr) |> ignore
+    let reply (server_descriptor, socket_fd, _, message) =
+      let open Lib.Message in
+      let open Lib.Server in
+      if message.ciaddr <> inet_addr_any
+      then (
+        let bytes = bytes_of_message message in
+        let recipient_addr = ADDR_INET (message.ciaddr, server_descriptor.port) in
+        let len_sent = sendto socket_fd bytes 0 (Bytes.length bytes) [] recipient_addr in
+        Printf.eprintf "[reply] sent back %d bytes\n" len_sent)
+      else Printf.eprintf "[reply] empty ciaddr, ignoring\n"
     ;;
 
     let request (server_descriptor, socket_fd, client_addr, message)
@@ -15,14 +23,24 @@ module Loop = struct
       (* fill the yiaddr *)
       let* message =
         if message.ciaddr = inet_addr_any
-        then
-          let* client_info =
+        then (
+          let client_info_result =
             message.chaddr
             |> Mac.readable_of_bytes message.hlen
             |> Database.find_opt server_descriptor.db.clients
             |> Option.to_result ~none:"client not found"
           in
-          Result.ok { message with yiaddr = inet_addr_of_string client_info.ip_addr }
+          let* ip_addr =
+            match client_info_result with
+            | Ok client_info -> inet_addr_of_string client_info.ip_addr |> Result.ok
+            | Error err ->
+              Printf.eprintf
+                "[request] database lookup error: %s. Trying a system lookup instead...\n"
+                err;
+              Mac.lookup_ip_by_mac ~length_bytes:message.hlen ~mac_address:message.chaddr
+              |> Option.to_result ~none:"client not found"
+          in
+          Result.ok { message with yiaddr = ip_addr })
         else Result.ok message
       in
       (* fill the file path *)
@@ -58,7 +76,7 @@ module Loop = struct
       (* send the response *)
       let bytes = bytes_of_message message in
       let len_sent = sendto socket_fd bytes 0 (Bytes.length bytes) [] client_addr in
-      Printf.eprintf "[req] sent back %d bytes\n" len_sent;
+      Printf.eprintf "[request] sent back %d bytes\n" len_sent;
       Result.ok ()
     ;;
   end
@@ -128,10 +146,14 @@ module Loop = struct
            (fun a ->
              match ProtocolWorkers.request a with
              | Result.Ok () -> ()
-             | Result.Error reason -> failwith reason)
+             | Result.Error reason ->
+               Printf.eprintf "[request] failed to handle the request: %s\n" reason;
+               flush_all () |> ignore)
            (server_descriptor, socket_fd, client_addr, message)
        | BootOp.BOOTREPLY ->
-         Thread.create ProtocolWorkers.reply (socket_fd, client_addr, message))
+         Thread.create
+           ProtocolWorkers.reply
+           (server_descriptor, socket_fd, client_addr, message))
       |> ignore
   ;;
 
@@ -253,7 +275,7 @@ let _ =
     exit 1
   | Ok Cli.{ port; db_path; name } ->
     let server_descriptor =
-      Lib.Server.{ name; db = Initialisation.read_db ~db_path () |> Result.get_ok }
+      Lib.Server.{ name; db = Initialisation.read_db ~db_path () |> Result.get_ok; port }
     in
     ( port
     , server_descriptor
