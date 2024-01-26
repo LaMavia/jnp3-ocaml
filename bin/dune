@@ -1,5 +1,5 @@
 (executables
- (names client server)
- (public_names client server)
+ (names client server encoder decoder)
+ (public_names client server encoder decoder)
  (libraries lib unix threads)
  (modes byte exe))
