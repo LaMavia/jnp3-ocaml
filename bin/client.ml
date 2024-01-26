@@ -1,8 +1,10 @@
-let () =
+let _ =
+  Printf.eprintf "starting\n";
   let open Lib.Message in
   let open Unix in
     (* create a bytes buffer of size 300 filled with zeros *)
     let buffer = Bytes.make 300 '\000' in
+    Bytes.set buffer 0 '\001';
     (* convert it into a bootp message *)
     let message = message_of_bytes buffer in
     (* set op field to bootrequest *)
@@ -46,5 +48,6 @@ let () =
           bind socket (ADDR_INET (Unix.inet_addr_any, client_port));
           (* send the message to the broadcast address on the server port *)
           sendto socket buffer 0 (Bytes.length buffer) [] (ADDR_INET (broadcast_address, server_port)) |> ignore;
+          Printf.eprintf "sent\n";
           
       
