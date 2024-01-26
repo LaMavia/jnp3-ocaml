@@ -47,7 +47,14 @@ let _ =
           (* bind the socket to the client port *)
           bind socket (ADDR_INET (Unix.inet_addr_any, client_port));
           (* send the message to the broadcast address on the server port *)
-          sendto socket buffer 0 (Bytes.length buffer) [] (ADDR_INET (broadcast_address, server_port)) |> ignore;
-          Printf.eprintf "sent\n";
+          sendto
+            socket
+            buffer
+            0
+            (Bytes.length buffer)
+            []
+            (ADDR_INET (broadcast_address, server_port))
+          |> ignore;
+          Printf.eprintf "sent\n";;
           
       
