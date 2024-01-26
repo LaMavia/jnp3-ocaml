@@ -1,3 +1,5 @@
+(include_subdirs unqualified)
+
 (executables
  (names client server encoder decoder)
  (public_names client server encoder decoder)
