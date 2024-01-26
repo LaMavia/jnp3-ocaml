@@ -1,4 +1,40 @@
+module Client = struct
+  open Unix
+  open Lib.Message
+  
+  let rec await_response socket broadcast_address server_port message timeout = 
+    (* every 500 ms listen with non blocking socket, if nothing comes send the message again *)
+    let buffer = Bytes.make 300 '\000' in
+    try
+      (* try to catch EAGAIN *)  
+      recvfrom
+        socket
+        buffer
+        0
+        (Bytes.length buffer)
+        []
+      |> ignore;
+      Printf.eprintf "received\n";
+    with Unix_error (EAGAIN, _, _) ->
+      (* send the message to the broadcast address on the server port *)
+      Printf.eprintf "errno = EAGAIN\n";
+      (* sleep for timeout seconds *)
+      Unix.sleep timeout;
+      let buffer = bytes_of_message message in
+      sendto
+        socket
+        buffer
+        0
+        (Bytes.length buffer)
+        []
+        (ADDR_INET (broadcast_address, server_port))
+      |> ignore;
+      Printf.eprintf "sent\n";
+      await_response socket broadcast_address server_port message (timeout * 2);;
+end
+
 let _ =
+  Out_channel.set_buffered stderr false;
   Printf.eprintf "starting\n";
   let open Lib.Message in
   let open Unix in
@@ -39,11 +75,14 @@ let _ =
       let buffer = bytes_of_message message in
         let server_port = 8080 in
         let client_port = 8081 in
+        let start_timeout = 1 in
         let broadcast_address = Unix.inet_addr_of_string "255.255.255.255" in
           (* create a socket *)
           let socket = socket PF_INET SOCK_DGRAM 0 in
           (* set the socket to broadcast *)
           setsockopt socket SO_BROADCAST true;
+          (* make the socket non-blocking *)
+          set_nonblock socket;
           (* bind the socket to the client port *)
           bind socket (ADDR_INET (Unix.inet_addr_any, client_port));
           (* send the message to the broadcast address on the server port *)
@@ -55,6 +94,9 @@ let _ =
             []
             (ADDR_INET (broadcast_address, server_port))
           |> ignore;
-          Printf.eprintf "sent\n";;
+          Printf.eprintf "sent\n";
+          Client.await_response socket broadcast_address server_port message start_timeout;;
+
+
           
       
