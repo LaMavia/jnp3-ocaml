@@ -183,20 +183,22 @@ module Cli = struct
   type t =
     { port : int
     ; db_path : string
+    ; name : string
     }
 
   let port = ref 0
   let db_path = ref ""
-  let usage_message = "dune exec bin/server.exe -- -p <port> -d <database-file>"
+  let name = ref ""
+  let usage_message = "dune exec bin/server.exe -- -p <port> -d <database-file> [-n name]"
 
   let speclist =
     [ "-p", Arg.Set_int port, "Server port"
     ; "-d", Arg.Set_string db_path, "Databse file path"
+    ; "-n", Arg.Set_string name, "Server name, no longer than 64 characters"
     ]
   ;;
 
-  let print_usage () =
-    Arg.usage speclist usage_message
+  let print_usage () = Arg.usage speclist usage_message
 
   let parse_args () =
     let open Consts in
@@ -208,7 +210,7 @@ module Cli = struct
       else
         Error
           (Printf.sprintf
-             "Invalid port number '%d'. Expect a port between %d, and %d."
+             "Invalid port number '%d': expect a port between %d, and %d."
              !port
              min_port
              max_port)
@@ -222,7 +224,19 @@ module Cli = struct
              "Invalid database file path '%s': file does not exist."
              !db_path)
     in
-    Ok { port; db_path }
+    let* name =
+      let name_length = String.length !name in
+      if name_length <= 64
+      then Ok !name
+      else
+        Error
+          (Printf.sprintf
+             "Invalid server name '%s': expected at most 64 characters, but found %d \
+              instead."
+             !name
+             name_length)
+    in
+    Ok { port; db_path; name }
   ;;
 end
 
@@ -232,12 +246,9 @@ let _ =
     Printf.eprintf "%s\n" err;
     Cli.print_usage ();
     exit 1
-  | Ok Cli.{ port; db_path } ->
+  | Ok Cli.{ port; db_path; name } ->
     let server_descriptor =
-      Lib.Server.
-        { name = String.make 64 '\000'
-        ; db = Initialisation.read_db ~db_path () |> Result.get_ok
-        }
+      Lib.Server.{ name; db = Initialisation.read_db ~db_path () |> Result.get_ok }
     in
     ( port
     , server_descriptor
