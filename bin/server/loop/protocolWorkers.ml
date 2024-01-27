@@ -48,7 +48,8 @@ let request (server_descriptor, socket_fd, client_addr, message) : (unit, string
     in
     let* boot_file_path =
       match Database.find_opt server_descriptor.db.boot_files fname with
-      | Some file_path -> Result.ok @@ Filename.concat server_descriptor.db.homedir file_path
+      | Some file_path ->
+        Result.ok @@ Filename.concat server_descriptor.db.homedir file_path
       | None when fname = Database.default_boot_file_name -> Result.ok ""
       | None -> Result.error "boot file not found"
     in
