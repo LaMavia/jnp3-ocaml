@@ -93,7 +93,6 @@ let _ =
          | _ -> !string_file_name)
     }
   in
-  (* set vend field to 0 *)
   let message = { message with vend = Bytes.make 64 '\000' } in
   let buffer = bytes_of_message message in
   let start_timeout = 1 in
@@ -103,7 +102,6 @@ let _ =
   setsockopt socket SO_BROADCAST true;
   set_nonblock socket;
   bind socket (ADDR_INET (Unix.inet_addr_any, !client_port));
-  (* send the message to the broadcast address on the server port *)
   sendto socket buffer 0 (Bytes.length buffer) [] server_address_with_port |> ignore;
   Printf.eprintf "sent\n";
   Client.await_response socket server_address_with_port message start_timeout
