@@ -25,7 +25,9 @@ let on_connection ~socket_fd ~server_descriptor ~raw_data ~(client_addr : sockad
          (server_descriptor, socket_fd, client_addr, message)
      | BootOp.BOOTREPLY ->
        Thread.create
-         ProtocolWorkers.reply
+         (fun a ->
+           ProtocolWorkers.reply a;
+           flush_all () |> ignore)
          (server_descriptor, socket_fd, client_addr, message))
     |> ignore
 ;;

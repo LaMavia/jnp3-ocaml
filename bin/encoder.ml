@@ -3,13 +3,13 @@ let _ =
   let file_path = Sys.argv.(1) in
   let file = open_out_bin file_path in
   let msg =
-    { op = BootOp.BOOTREQUEST
+    { op = BootOp.BOOTREPLY
     ; htype = 1
     ; hlen = 6
     ; hops = 1
     ; xid = Int32.of_int 12
     ; secs = 1
-    ; ciaddr = Unix.inet_addr_any
+    ; ciaddr = Unix.inet_addr_of_string "36.19.0.5"
     ; yiaddr = Unix.inet_addr_any
     ; siaddr = Unix.inet_addr_any
     ; giaddr = Unix.inet_addr_any
@@ -19,7 +19,5 @@ let _ =
     ; vend = Bytes.make 64 '\000'
     }
   in
-  let eq = if "a\000" = "a" then "yes" else "no" in
-  Printf.eprintf "%s\n" eq;
   output_bytes file (bytes_of_message msg)
 ;;
