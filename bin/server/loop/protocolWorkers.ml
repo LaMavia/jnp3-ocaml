@@ -47,12 +47,12 @@ let request (server_descriptor, socket_fd, client_addr, message) : (unit, string
       else message.file
     in
     let* boot_file_path =
-      fname
-      |> Database.find_opt server_descriptor.db.boot_files
-      |> Option.to_result ~none:"boot file not found"
+      match Database.find_opt server_descriptor.db.boot_files fname with
+      | Some file_path -> Result.ok @@ Filename.concat server_descriptor.db.homedir file_path
+      | None when fname = Database.default_boot_file_name -> Result.ok ""
+      | None -> Result.error "boot file not found"
     in
-    let full_file_path = Filename.concat server_descriptor.db.homedir boot_file_path in
-    Result.ok { message with file = full_file_path }
+    Result.ok { message with file = boot_file_path }
   in
   (* fill the server address *)
   let* server_inet_addr =

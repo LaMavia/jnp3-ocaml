@@ -13,9 +13,9 @@ let _ =
     ; yiaddr = Unix.inet_addr_any
     ; siaddr = Unix.inet_addr_any
     ; giaddr = Unix.inet_addr_any
-    ; chaddr = Mac.bytes_of_readable "02.60.8c.06.34.08"
+    ; chaddr = Mac.bytes_of_readable "02.60.8c.06.34.98"
     ; sname = String.make 64 '\000'
-    ; file = "watch"
+    ; file = "" 
     ; vend = Bytes.make 64 '\000'
     }
   in

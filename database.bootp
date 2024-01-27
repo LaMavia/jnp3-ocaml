@@ -4,6 +4,7 @@
 vmunix          vmunix
 tip             ethertip
 watch           /usr/diag/etherwatch
+default         default-file-name
 gate            gate.
 
 % end of generic names, start of address mappings
