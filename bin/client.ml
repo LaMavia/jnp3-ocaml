@@ -39,7 +39,7 @@ module Client = struct
 end
 
 let _ =
-  let usage_msg = "usage: " ^ Sys.argv.(0) ^ " [--server-addr <server_address_if_known>] [--src-addr <your_address_if_known>] [--server-name <server_host_name_if_known>] [--file-name <requested_file_name>] server-port <server_port> client-port <client_port>" in
+  let usage_msg = "usage: " ^ Sys.argv.(0) ^ " --server-port <server_port> --client-port <client_port> [--server-addr <server_address_if_known>] [--src-addr <your_address_if_known>] [--server-name <server_host_name_if_known>] [--file-name <requested_file_name>]" in
 
   let string_server_address = ref "255.255.255.255" in
   let string_client_address = ref "" in
@@ -50,12 +50,12 @@ let _ =
 
   let speclist =
     [
+      ("--server-port", Arg.Set_int server_port, "Server port");
+      ("--client-port", Arg.Set_int client_port, "Client port");
       ("--server-addr", Arg.Set_string string_server_address, "Server address if known");
       ("--src-addr", Arg.Set_string string_client_address, "Your address if known");
       ("--server-name", Arg.Set_string string_server_name, "Server host name if known");
-      ("--file-name", Arg.Set_string string_file_name, "Requested file name");
-      ("--server-port", Arg.Set_int server_port, "Server port");
-      ("--client-port", Arg.Set_int client_port, "Client port")
+      ("--file-name", Arg.Set_string string_file_name, "Requested file name")
     ] in
 
   Arg.parse speclist (fun x -> raise (Arg.Bad ("Bad argument : " ^ x))) usage_msg;
