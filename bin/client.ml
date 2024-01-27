@@ -60,7 +60,7 @@ let _ =
   (* set giaddr field to 0 *)
   let message = { message with giaddr = Unix.inet_addr_any } in
   (* set chaddr field to mac address gotten from file /sys/class/net/wlo1/address *)
-  let message = { message with chaddr = Bytes.of_string "02.60.8c.06.34.98" } in
+  let message = { message with chaddr = Mac.bytes_of_readable "02.60.8c.06.34.98" } in
   (* set sname field to 0 *)
   let message = { message with sname = String.make 64 '\000' } in
   (* set file field to 0 *)
