@@ -12,8 +12,12 @@ Assuming you've run the scaffolding script, use `dune build -w` to keep dune run
 
 ### Running the client
 
+For all the options see `dune exec bin/client.exe -- --help`.
+
+An example command for running the client:
+
 ```sh
-dune exec bin/client.exe 
+dune exec bin/client.exe -- --server-port 8080 --client-port 8081
 ```
 
 ### Running the server
