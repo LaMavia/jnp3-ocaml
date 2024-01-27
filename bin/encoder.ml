@@ -15,7 +15,7 @@ let _ =
     ; giaddr = Unix.inet_addr_any
     ; chaddr = Mac.bytes_of_readable "02.60.8c.06.34.98"
     ; sname = String.make 64 '\000'
-    ; file = "" 
+    ; file = "gate"
     ; vend = Bytes.make 64 '\000'
     }
   in
