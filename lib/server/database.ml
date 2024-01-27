@@ -85,6 +85,9 @@ let db_entry_of_line line =
   let open Either in
   match split_by_whitespace line with
   (* boot_file entry *)
+  | [ generic_name; path ] when String.ends_with ~suffix:"." path ->
+    let path_without_terminator = String.sub path 0 (String.length path - 1) in
+    Left (generic_name, path_without_terminator)
   | [ generic_name; path ] -> Left (generic_name, path)
   | hostname :: hardware_type :: hardware_addr :: ip_addr :: optional_fields ->
     let generic_name = List.nth_opt optional_fields 0 in
@@ -95,7 +98,7 @@ let db_entry_of_line line =
   | [] -> invalid_arg "No fragments; expected the line to be non-empty."
   | f :: fs ->
     let expl = List.fold_left (fun acc fragment -> acc ^ "|" ^ fragment) f fs in
-    Printf.eprintf "%s" expl;
+    Printf.eprintf "Database entry parsing error: %s" expl;
     invalid_arg expl
 ;;
 
